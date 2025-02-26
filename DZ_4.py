@@ -1,105 +1,77 @@
-from typing import Callable, Dict
-
 def input_error(func):
     def inner(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except KeyError:
-            return "Enter user name."
+            return "Contact not found."
         except ValueError:
             return "Give me name and phone please."
         except IndexError:
-            return "Incorrect command format."
+            return "Invalid command. Usage: [command] [arguments]"
     return inner
 
-def parse_input(user_input: str):
-    parts = user_input.strip().split()
-    command = parts[0].lower()
-    args = parts[1:]
-    return command, args
-
 @input_error
-def add_contact(args, contacts: Dict[str, str]):
+def add_contact(args, contacts):
+    if len(args) != 2:
+        raise ValueError
     name, phone = args
     contacts[name] = phone
     return "Contact added."
 
 @input_error
-def get_contact(args, contacts: Dict[str, str]):
-    name = args[0]
-    return contacts[name]
-
-@input_error
-def get_all_contacts(args, contacts: Dict[str, str]):
-    return "\n".join([f"{name}: {phone}" for name, phone in contacts.items()])
-
-@input_error
-def change_contact(args, contacts: Dict[str, str]):
+def change_contact(args, contacts):
+    if len(args) != 2:
+        raise ValueError
     name, new_phone = args
     if name in contacts:
         contacts[name] = new_phone
         return "Contact updated."
     else:
-        return "Contact not found."
+        raise KeyError
 
-def handler(command, args):
-    commands = {
-        "add": add_contact,
-        "phone": get_contact,
-        "all": get_all_contacts,
-        "change": change_contact
-    }
-    if command in commands:
-        return commands[command](args)
+@input_error
+def show_phone(args, contacts):
+    if len(args) != 1:
+        raise ValueError
+    name = args[0]
+    if name in contacts:
+        return f"{name}: {contacts[name]}"
     else:
-        return "Unknown command."
+        raise KeyError
+
+@input_error
+def show_all(contacts):
+    if not contacts:
+        return "No contacts found."
+    return "\n".join([f"{name}: {phone}" for name, phone in contacts.items()])
+
+def parse_input(user_input):
+    cmd, *args = user_input.split()
+    cmd = cmd.strip().lower()
+    return cmd, args
 
 def main():
     contacts = {}
+    print("Welcome to the assistant bot!")
+
     while True:
         user_input = input("Enter a command: ")
         command, args = parse_input(user_input)
-        response = handler(command, args)
-        print(response)
-        if command in ["exit", "close", "goodbye"]:
-            print("Goodbye!")
+
+        if command in ["close", "exit"]:
+            print("Good bye!")
             break
-
-if __name__ == "__main__":
-    main()
-
-def add_contact(args):
-    name, phone = args
-    contacts[name] = phone
-    return "Contact added."
-
-@input_error
-def get_contact(args):
-    name = args[0]
-    return f"{name}: {contacts[name]}"
-
-@input_error
-def get_all_contacts(args):
-    return "\n".join([f"{name}: {phone}" for name, phone in contacts.items()])
-
-def handler(command, args):
-    commands = {
-        "add": add_contact,
-        "phone": get_contact,
-        "all": get_all_contacts
-    }
-    if command in commands:
-        return commands[command](args)
-    else:
-        return "Unknown command."
-
-def main():
-    while True:
-        command = input("Enter a command: ").strip()
-        if command == "exit":
-            break
-        args = input("Enter the argument for the command: ").strip().split()
-        print(handler(command, args))
-
+        elif command == "hello":
+            print("How can I help you?")
+        elif command == "add":
+            print(add_contact(args, contacts))
+        elif command == "change":
+            print(change_contact(args, contacts))
+        elif command == "phone":
+            print(show_phone(args, contacts))
+        elif command == "all":
+            print(show_all(contacts))
+        else:
+            print("Invalid command.")
 if __name__ == "__main__":
     main()
